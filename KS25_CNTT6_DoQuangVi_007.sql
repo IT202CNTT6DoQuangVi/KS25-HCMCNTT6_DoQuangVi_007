@@ -180,13 +180,12 @@ VALUES('8003',1,'2024-05-20 9:05','Đã khám lần đầu'),
     
     -- PHẦN 6
     -- viết 1 trigger khi trạng thái của một phiếu hẹn trong appointments được update thành completed thì thêm 1 bản ghi mới vào visit log với các giá trị record_id,doctor_id,note,logtime
-    DELIMITER //
+    DELIMITER \\
     CREATE TRIGGER bf_update_status
     AFTER UPDATE ON appointments
     FOR EACH ROW
     BEGIN 
 		DECLARE v_record_id VARCHAR(10);
-        DECLARE v_doctor_id INT;
 			IF NEW.appointment_status = 'Completed' 
             AND OLD.appointment_status <> 'Completed'
             THEN
@@ -219,13 +218,40 @@ VALUES('8003',1,'2024-05-20 9:05','Đã khám lần đầu'),
 							WHERE doctor_id = NEW.doctor_id;
                             
 					END IF;
-			END \\
+			END  \\
     DELIMITER ;
     
+    
+    CALL af_insert;
     
     -- PHẦN 7
     -- VIẾT procedure nhận vào mã bác sĩ và trả về 1 thông báo kết quả trong đs: nếu tổng phí khám completed của bác sĩ > 1000000 thì trả về high revenue
     -- bằng nhau thì trả về target met 
-    -- nhỏ hơn thì trả về normal 
+    -- nhỏ hơn thì trả về normal
+    DELIMITER \\
     
+		CREATE PROCEDURE check_doctor_revenue (IN p_doctor_id INT)
+			BEGIN
+				DECLARE total_revenue DECIMAL(10,2);
+				
+                SELECT SUM(fee)
+                INTO total_revenue
+                FROM appointments
+                WHERE doctor_id = p_doctor_id
+                AND appointments_status = 'Completed';
+                
+                IF total_revenue > 1000000
+                THEN SELECT 'High revenue' AS result;
+                
+                ELSEIF total_revenue = 1000000
+                THEN SELECT 'Target met' AS result;
+                
+                ELSE SELECT 'Normal' AS result;
+                END IF;
+                
+			END \\
+
+	DELIMITER ;
+    
+    CALL check_doctor_revenue;
     
