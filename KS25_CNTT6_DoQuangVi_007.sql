@@ -222,8 +222,6 @@ VALUES('8003',1,'2024-05-20 9:05','Đã khám lần đầu'),
     DELIMITER ;
     
     
-    CALL af_insert;
-    
     -- PHẦN 7
     -- VIẾT procedure nhận vào mã bác sĩ và trả về 1 thông báo kết quả trong đs: nếu tổng phí khám completed của bác sĩ > 1000000 thì trả về high revenue
     -- bằng nhau thì trả về target met 
@@ -238,7 +236,7 @@ VALUES('8003',1,'2024-05-20 9:05','Đã khám lần đầu'),
                 INTO total_revenue
                 FROM appointments
                 WHERE doctor_id = p_doctor_id
-                AND appointments_status = 'Completed';
+                AND appointment_status = 'Completed';
                 
                 IF total_revenue > 1000000
                 THEN SELECT 'High revenue' AS result;
@@ -253,5 +251,5 @@ VALUES('8003',1,'2024-05-20 9:05','Đã khám lần đầu'),
 
 	DELIMITER ;
     
-    CALL check_doctor_revenue;
+    CALL check_doctor_revenue();
     
