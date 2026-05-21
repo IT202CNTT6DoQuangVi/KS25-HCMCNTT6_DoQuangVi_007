@@ -54,7 +54,8 @@ CREATE TABLE visit_log(
     doctor_id INT,
     log_time DATETIME NOT NULL,
     note TEXT,
-    FOREIGN KEY (doctor_id) REFERENCES doctors(doctor_id)
+    FOREIGN KEY (doctor_id) REFERENCES doctors(doctor_id),
+    FOREIGN KEY (record_id) REFERENCES medical_records(record_id)
 );
 
 
@@ -127,7 +128,7 @@ VALUES('8003',1,'2024-05-20 9:05','Đã khám lần đầu'),
     WHERE rating > 4.7 OR specialty = 'Nhi';
     
     SELECT full_name,phone_number FROM patients -- câu 2
-    WHERE phone_number LIKE'090%' AND date_of_birth BETWEEN '1998-01-01' AND '2001-31-12';
+    WHERE phone_number LIKE'090%' AND date_of_birth BETWEEN '1998-01-01' AND '2001-12-31';
     
     SELECT appointment_id, appointment_time, fee -- câu 3
     FROM appointments
@@ -146,5 +147,51 @@ VALUES('8003',1,'2024-05-20 9:05','Đã khám lần đầu'),
     
     -- liệt kê thông tin bác sĩ gồm full_name và tổng phí khám bác sĩ đó đã thực hiện , chỉ tính phiếu completed, chỉ hiển thị bác sĩ có tổng chi phí lớn hơn 500000
     
+   SELECT d.full_name, SUM(a.fee) AS total_fee
+   FROM doctors AS d
+   JOIN appointments AS a
+   ON d.doctor_id = a.doctor_id
+   WHERE a.appointment_status = 'Completed'
+   GROUP BY d.doctor_id,d.full_name
+   HAVING total_fee > 500000;
     
     
+    
+    -- Liệt kê thông tin bác sĩ gồm id, full name và rating của những bác sĩ có rate cao nhất 
+    SELECT doctor_id,full_name,rating
+    FROM doctors
+    WHERE rating = (SELECT MAX(rating) FROM doctors);
+    
+    -- phần 5
+    -- tạo một index trên bản appointments dựa trên 2 trạng thái hẹn khám và phí khám 
+    CREATE INDEX appointment
+    ON appointments(appointment_status,fee);
+    
+    -- tạo một view hiển thị tên bác sĩ tổng số phiếu hẹn và tổng doanh thu phí khám mang lại, không tính các phiếu hủy 
+    CREATE VIEW achive AS
+    SELECT d.full_name AS 'tên bác sĩ',
+		COUNT(a.appointment_id) AS total_appoint , 
+		SUM(a.fee) AS total_fee
+	FROM doctors AS d
+    JOIN appointments AS a
+    ON d.doctor_id = a.doctor_id
+    WHERE a.appointment_status <> 'Cancelled'
+    GROUP BY d.full_name;
+    
+    -- PHẦN 6
+    -- viết 1 trigger khi trạng thái của một phiếu hẹn trong appointments được update thành completed thì thêm 1 bản ghi mới vào visit log 
+    DELIMITER //
+    CREATE TRIGGER bf_update_status
+    BEFORE UPDATE ON appointments
+    FOR EACH ROW
+    BEGIN 
+			IF NEW.appointment_status = 'Completed' AND OLD.appointment_status ='Completed'
+            THEN
+            INSERT INTO visit_log(appointment_id,doctor_id,note,log_time)
+					VALUES(OLD.appointment_id,OLD.doctor_id,OLD.note,OLD.log_time );
+                    
+			END IF;
+	END // 
+    
+    DELIMITER ;
+            
