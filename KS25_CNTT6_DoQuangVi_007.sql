@@ -179,19 +179,22 @@ VALUES('8003',1,'2024-05-20 9:05','Đã khám lần đầu'),
     GROUP BY d.full_name;
     
     -- PHẦN 6
-    -- viết 1 trigger khi trạng thái của một phiếu hẹn trong appointments được update thành completed thì thêm 1 bản ghi mới vào visit log 
+    -- viết 1 trigger khi trạng thái của một phiếu hẹn trong appointments được update thành completed thì thêm 1 bản ghi mới vào visit log với các giá trị record_id,doctor_id,note,logtime
     DELIMITER //
     CREATE TRIGGER bf_update_status
-    BEFORE UPDATE ON appointments
+    AFTER UPDATE ON appointments
     FOR EACH ROW
     BEGIN 
-			IF NEW.appointment_status = 'Completed' AND OLD.appointment_status ='Completed'
+			IF NEW.appointment_status = 'Completed' AND OLD.appointment_status <> 'Completed'
             THEN
-            INSERT INTO visit_log(appointment_id,doctor_id,note,log_time)
-					VALUES(OLD.appointment_id,OLD.doctor_id,OLD.note,OLD.log_time );
+            INSERT INTO visit_log(record_id,doctor_id,note,log_time)
+            VALUES(NEW.record_id ,NEW.doctor_id,'Visit Completed',NOW());
                     
 			END IF;
 	END // 
     
     DELIMITER ;
+    
+    
+    -- thêm mới 1 bản ghi vào bảng appointment có trạng thái completed thì hệ thống tự tăng điểm đánh giá của bác sĩ tương ứng thêm 0.1, nhưng đảm bảo điểm số không vượt quá 5.0
             
