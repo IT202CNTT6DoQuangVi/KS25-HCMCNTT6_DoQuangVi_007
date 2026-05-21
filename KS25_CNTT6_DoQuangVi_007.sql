@@ -192,17 +192,40 @@ VALUES('8003',1,'2024-05-20 9:05','Đã khám lần đầu'),
             THEN
 				SELECT record_id
 				INTO v_record_id
-				FROM medical_records;
-				SELECT doctor_id
-				INTO v_doctor_id
-                FROM appointments;
+				FROM medical_records
+                WHERE appointment_id = NEW.appointment_id
+                LIMIT 1;
             INSERT INTO visit_log(record_id,doctor_id,log_time,note)
-            VALUES(v_record_id,v.doctor_id,NOW(),'Visit completed');
+            VALUES(v_record_id,NEW.doctor_id,NOW(),'Visit completed');
 			END IF;
-	END // 
+	END \\ 
     
     DELIMITER ;
-    
+	
+
     
     -- thêm mới 1 bản ghi vào bảng appointment có trạng thái completed thì hệ thống tự tăng điểm đánh giá của bác sĩ tương ứng thêm 0.1, nhưng đảm bảo điểm số không vượt quá 5.0
             
+	DELIMITER \\
+		CREATE TRIGGER af_insert
+		AFTER INSERT ON appointments
+		FOR EACH ROW
+        
+			BEGIN 
+					IF NEW.appointment_status = 'Completed'
+                    THEN
+						UPDATE doctors
+							SET rating = LEAST(rating + 0.1, 5.0)
+							WHERE doctor_id = NEW.doctor_id;
+                            
+					END IF;
+			END \\
+    DELIMITER ;
+    
+    
+    -- PHẦN 7
+    -- VIẾT procedure nhận vào mã bác sĩ và trả về 1 thông báo kết quả trong đs: nếu tổng phí khám completed của bác sĩ > 1000000 thì trả về high revenue
+    -- bằng nhau thì trả về target met 
+    -- nhỏ hơn thì trả về normal 
+    
+    
