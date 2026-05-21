@@ -185,11 +185,19 @@ VALUES('8003',1,'2024-05-20 9:05','Đã khám lần đầu'),
     AFTER UPDATE ON appointments
     FOR EACH ROW
     BEGIN 
-			IF NEW.appointment_status = 'Completed' AND OLD.appointment_status <> 'Completed'
+		DECLARE v_record_id VARCHAR(10);
+        DECLARE v_doctor_id INT;
+			IF NEW.appointment_status = 'Completed' 
+            AND OLD.appointment_status <> 'Completed'
             THEN
-            INSERT INTO visit_log(record_id,doctor_id,note,log_time)
-            VALUES(NEW.record_id ,NEW.doctor_id,'Visit Completed',NOW());
-                    
+				SELECT record_id
+				INTO v_record_id
+				FROM medical_records;
+				SELECT doctor_id
+				INTO v_doctor_id
+                FROM appointments;
+            INSERT INTO visit_log(record_id,doctor_id,log_time,note)
+            VALUES(v_record_id,v.doctor_id,NOW(),'Visit completed');
 			END IF;
 	END // 
     
